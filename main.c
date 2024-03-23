@@ -2,7 +2,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#define N 255
+#define GRAVITY 10
+#define SIZE 10
+#define N 1024 
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -44,11 +46,9 @@ void quit()
 	SDL_Quit();
 }
 
-int main(int argc, char **args)
+void loop()
 {
-	init();
-    
-    int x = 0, y = 0;
+	int x = 0, y = 0;
 	bool pressed = false;
 	int count = 0;
 	Uint32 start = 0;
@@ -71,7 +71,7 @@ int main(int argc, char **args)
 		// Generate particles every 50 ms
 		if (pressed) {
 			if (SDL_GetTicks() - start > 50) {
-				parts[count++] = (SDL_Rect){ x, y, 10, 10 };
+				parts[count++] = (SDL_Rect){ x / SIZE * SIZE, y / SIZE * SIZE, SIZE, SIZE };
 				start = SDL_GetTicks();
 			}
 		}
@@ -91,20 +91,21 @@ int main(int argc, char **args)
 				// Clunky block to check collision by comparing particles' (rectangles') borders
 				bool lcollision = (p.x + p.w > parts[j].x) && (p.x + p.w < parts[j].x + parts[j].w);
 				bool rcollision = (p.x > parts[j].x) && (p.x < parts[j].x + parts[j].w);
-				bool ucollision = (p.x == parts[j].x) && (p.x + p.w == parts[j].x + parts[j].w);
-
+				
 				if ((p.y + p.h >= parts[j].y && p.y + p.h < parts[j].y + parts[j].h) ||
 				(p.y >= parts[j].y && p.y < parts[j].y + parts[j].h)) {
-					if (ucollision)
+					if (p.x == parts[j].x)
 						p.x += rand() % 2 ? -1 : 1;
 					else
 						p.x += rcollision - lcollision;
-					collided |= lcollision || rcollision || ucollision;
 				}
+				
+				if (p.y + p.h >= parts[j].y && p.y + p.h < parts[j].y + parts[j].h)
+					collided |= lcollision || rcollision;
 			}
 			
 			// Particle falls down if did not collide
-			p.y += !collided;
+			p.y += !collided * GRAVITY;
 
 			// Update particle
 			parts[i] = p;
@@ -136,6 +137,13 @@ int main(int argc, char **args)
 			parts[count = n - 1] = (SDL_Rect){ 0, 0, 0, 0 };
 		}
     }
+}
+
+int main(int argc, char **args)
+{
+	init();
+    
+    loop();
     
 	quit();
 
